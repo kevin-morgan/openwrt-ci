@@ -25,7 +25,8 @@ on:
 
 
 env:
-  REPO_URL: https://github.com/coolsnowwolf/lede
+#  REPO_URL: https://github.com/coolsnowwolf/lede
+  REPO_URL: https://github.com/kevin-morgan/lede
   REPO_BRANCH: master
   CONFIG_FILE: x86_64.config
   CUSTOM_SH: custom.sh
@@ -107,7 +108,10 @@ jobs:
         echo "======================="
         df -h
         echo "======================="
+        echo $PWD "exclude ./build_dir & ./bin"
         du -h --max-depth=1 ./ --exclude=build_dir --exclude=bin
+        echo "======================="
+        echo $PWD"/build_dir"
         du -h --max-depth=1 ./build_dir
 
     - name: Compile The Firmware
@@ -122,8 +126,13 @@ jobs:
         echo "======================="
         df -h
         echo "======================="
+        echo $PWD "exclude ./build_dir & ./bin"
         du -h --max-depth=1 ./ --exclude=build_dir --exclude=bin
+        echo "======================="
+        echo $PWD"/build_dir"
         du -h --max-depth=1 ./build_dir
+        echo "======================="
+        echo $PWD"/bin"
         du -h --max-depth=1 ./bin
 
     - name: Upload bin Directory
