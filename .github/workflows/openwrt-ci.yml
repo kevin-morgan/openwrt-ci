@@ -1,0 +1,152 @@
+# =================================================
+# https://github.com/kevin-morgan/OpenWRT-CI
+# Description: OpenWRT Con­tin­u­ous In­te­gra­tion with GitHub Actions
+# Lisence: MIT
+# Author: Kevin MORGAN
+# Email: kevin_morgan@outlook.com
+# =================================================
+
+name: Build OpenWRT
+
+on:
+#  push:
+#    branches:
+#      - master
+#    tags:
+#      - 'v*'
+#    paths:
+#      - '.config'
+#  schedule:
+#    - cron: 0 20 * * *
+  release:
+    types: [published]
+  watch:
+    types: [started]
+
+
+env:
+  REPO_URL: https://github.com/coolsnowwolf/lede
+  REPO_BRANCH: master
+  CONFIG_FILE: x86_64.config
+  CUSTOM_SH: custom.sh
+  FREE_UP_DISK: true
+  SSH_ACTIONS: false
+  UPLOAD_BIN_DIR: true
+  UPLOAD_FIRMWARE: false
+  TIMEZONE: Asia/Shanghai
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    if: github.event.repository.owner.id == github.event.sender.id
+
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@master
+
+    - name: Initialization Environment
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo swapoff /swapfile
+        sudo rm -rf /swapfile /etc/apt/sources.list.d/*
+        sudo -E apt-get -qq update
+        sudo -E apt-get -qq install build-essential asciidoc binutils bzip2 gawk gettext git libncurses5-dev libz-dev patch python3 unzip zlib1g-dev lib32gcc1 libc6-dev-i386 subversion flex uglifyjs git-core gcc-multilib p7zip p7zip-full msmtp libssl-dev texinfo libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint device-tree-compiler
+
+    - name: Free Up Disk Space
+      if: env.FREE_UP_DISK == 'true'
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo rm -rf /usr/share/dotnet
+        docker rmi `docker images -q`
+        sudo -E apt-get -q purge azure-cli ghc* zulu* hhvm llvm* firefox google* dotnet* powershell openjdk* mysql* php*
+        sudo -E apt-get -qq autoremove --purge
+        sudo -E apt-get -qq clean
+        echo "======================="
+        echo "Space Usage:"
+        echo "======================="
+        df -h
+        echo "======================="
+
+    - name: Clone Source Code
+      run: git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
+
+    - name: Update Feeds
+      run: cd openwrt && ./scripts/feeds update -a
+
+    - name: Install Feeds
+      run: cd openwrt && ./scripts/feeds install -a
+
+    - name: Load Custom Configuration
+      run: |
+        [ -e files ] && mv files openwrt/files
+        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
+        chmod +x $CUSTOM_SH
+        cd openwrt
+        ../$CUSTOM_SH
+        make defconfig
+
+    - name: SSH connection to Actions
+      uses: kevin-morgan/action-debugger@master
+      if: env.SSH_ACTIONS == 'true'
+
+    - name: Download Packages
+      id: package
+      run: |
+        cd openwrt
+        make download -j8
+        find dl -size -1024c -exec ls -l {} \;
+        find dl -size -1024c -exec rm -f {} \;
+        echo "======================="
+        echo "Space Usage:"
+        echo "======================="
+        df -h
+        echo "======================="
+        du -h --max-depth=1 ./ --exclude=build_dir --exclude=bin
+        du -h --max-depth=1 ./build_dir
+
+    - name: Compile The Firmware
+      id: compile
+      run: |
+        cd openwrt
+        echo -e "$(nproc) thread compile"
+        make -j$(nproc) || make -j1 V=s
+        echo "::set-output name=status::success"
+        echo "======================="
+        echo "Space Usage:"
+        echo "======================="
+        df -h
+        echo "======================="
+        du -h --max-depth=1 ./ --exclude=build_dir --exclude=bin
+        du -h --max-depth=1 ./build_dir
+        du -h --max-depth=1 ./bin
+
+    - name: Upload bin Directory
+      uses: actions/upload-artifact@master
+      if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
+      with:
+        name: OpenWrt_directory
+        path: openwrt/bin
+
+    - name: Organize Files
+      id: organize
+      if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
+      run: |
+        cd openwrt/bin/targets/*/*
+        rm -rf packages
+        echo "::set-env name=FIRMWARE::$(pwd)"
+        echo "::set-output name=status::success"
+
+    - name: Upload Firmware Directory
+      uses: actions/upload-artifact@master
+      if: steps.organize.outputs.status == 'success' && !cancelled()
+      with:
+        name: OpenWrt_firmware
+        path: ${{ env.FIRMWARE }}
+
+
