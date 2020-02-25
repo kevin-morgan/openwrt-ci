@@ -85,11 +85,88 @@ jobs:
 
     - name: Load Custom Configuration
       run: |
-        [ -e files ] && mv files openwrt/files
-        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
+
+        rm -f ./.config*
+        touch ./.config
+
+        # COMPILE x86_64 FIRMWARE
+        cat >> .config <<EOF
+        CONFIG_TARGET_x86=y
+        CONFIG_TARGET_x86_64=y
+        CONFIG_TARGET_x86_64_Generic=y
+        EOF
+
+        # UEFI FIRMWARE:
+        cat >> .config <<EOF
+        CONFIG_EFI_IMAGES=y
+        EOF
+
+        # IMAGE COMPRESSION
+        cat >> .config <<EOF
+        CONFIG_VMDK_IMAGES=y
+        CONFIG_TARGET_IMAGES_GZIP=y
+        EOF
+
+        # IPv6 SUPPIRT
+        cat >> .config <<EOF
+        CONFIG_PACKAGE_dnsmasq_full_dhcpv6=y
+        CONFIG_PACKAGE_ipv6helper=y
+        EOF
+
+        # FILE SYSTEM SUPPORT
+        cat >> .config <<EOF
+        CONFIG_PACKAGE_kmod-fs-nfs=y
+        CONFIG_PACKAGE_kmod-fs-nfs-common=y
+        CONFIG_PACKAGE_kmod-fs-nfs-v3=y
+        CONFIG_PACKAGE_kmod-fs-nfs-v4=y
+        CONFIG_PACKAGE_kmod-fs-ntfs=y
+        CONFIG_PACKAGE_kmod-fs-squashfs=y
+        EOF
+
+        # USB SUPPORT
+        cat >> .config <<EOF
+        CONFIG_PACKAGE_kmod-usb-ohci=y
+        CONFIG_PACKAGE_kmod-usb-ohci-pci=y
+        CONFIG_PACKAGE_kmod-usb2=y
+        CONFIG_PACKAGE_kmod-usb2-pci=y
+        CONFIG_PACKAGE_kmod-usb3=y
+        EOF
+
+        # LuCI THEMES
+        cat >> .config <<EOF
+        CONFIG_PACKAGE_luci-theme-argon=y
+        CONFIG_PACKAGE_luci-theme-argon-dark=y
+        CONFIG_PACKAGE_luci-theme-bootstrap=y
+        EOF
+
+        # LuCI APPS
+        cat >> .config <<EOF
+        CONFIG_PACKAGE_luci-app-acme=y
+        CONFIG_PACKAGE_luci-app-filetransfer=y
+        CONFIG_PACKAGE_luci-app-netdata=y
+        CONFIG_PACKAGE_luci-app-nps=y
+        CONFIG_PACKAGE_luci-app-ocserv=y
+        CONFIG_PACKAGE_luci-app-passwall=y
+        CONFIG_PACKAGE_luci-app-serverchan=y
+        CONFIG_PACKAGE_luci-app-ttyd=y
+        EOF
+
+        # LuCI UTILITIES
+        cat >> .config <<EOF
+        CONFIG_PACKAGE_curl=y
+        CONFIG_PACKAGE_htop=y
+        CONFIG_PACKAGE_nano=y
+        CONFIG_PACKAGE_screen=y
+        CONFIG_PACKAGE_tree=y
+        CONFIG_PACKAGE_vim-fuller=y
+        CONFIG_PACKAGE_wget=y
+        EOF
+
         chmod +x $CUSTOM_SH
         cd openwrt
         ../$CUSTOM_SH
+
+        sed -i 's/^[ \t]*//g' ./.config
         make defconfig
 
     - name: SSH connection to Actions
