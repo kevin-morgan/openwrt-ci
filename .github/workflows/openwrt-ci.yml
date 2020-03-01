@@ -31,6 +31,10 @@ env:
   REPO_BRANCH: master
 #  REPO_URL: https://github.com/openwrt/openwrt
 #  REPO_BRANCH: openwrt-19.07
+  REPO_THEME_URL: https://github.com/kevin-morgan/luci-theme-argon-dark
+  REPO_THEME_BRANCH: master
+  REPO_SERVERCHAN_URL: https://github.com/tty228/luci-app-serverchan
+  REPO_SERVERCHAN_BRANCH: master
   CONFIG_FILE: x86_64.config
   CUSTOM_SH: custom.sh
   SSH_ACTIONS: true
@@ -72,6 +76,11 @@ jobs:
 
     - name: Clone Source Code
       run: git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
+
+    - name: Clone luci-theme-argon-dark
+      run: |
+        git clone --depth 1 $REPO_THEME_URL -b $REPO_THEME_BRANCH openwrt/package/kevin/luci-theme-argon-dark
+        git clone --depth 1 $REPO_SERVERCHAN_URL -b $REPO_SERVERCHAN_BRANCH openwrt/package/kevin/luci-app-serverchan
 
     - name: Update Feeds
       run: cd openwrt && ./scripts/feeds update -a
@@ -135,7 +144,7 @@ jobs:
       uses: actions/upload-artifact@master
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
       with:
-        name: OpenWrt-v$VERSION_NUMBER-b$BUILD_DATE-r$REVESION_NUMBER
+        name: OpenWRT-Directory
         path: openwrt/bin
 
     - name: Organize Files
@@ -151,7 +160,7 @@ jobs:
       uses: actions/upload-artifact@master
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: OpenWrt-Firmware-v$VERSION_NUMBER-b$BUILD_DATE-r$REVESION_NUMBER
+        name: OpenWRT-Firmware
         path: ${{ env.FIRMWARE }}
 
 
