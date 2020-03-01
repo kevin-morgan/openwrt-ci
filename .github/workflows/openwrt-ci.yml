@@ -82,8 +82,26 @@ jobs:
         git clone --depth 1 $REPO_THEME_URL -b $REPO_THEME_BRANCH openwrt/package/kevin/luci-theme-argon-dark
         git clone --depth 1 $REPO_SERVERCHAN_URL -b $REPO_SERVERCHAN_BRANCH openwrt/package/kevin/luci-app-serverchan
 
+    - name: Add lienol's package to Feeds
+      run: cd openwrt && echo "src-git lienol https://github.com/Lienol/openwrt-package" >> feeds.conf.default
+
     - name: Update Feeds
       run: cd openwrt && ./scripts/feeds update -a
+
+    - name: lienol's fix
+      run: |
+        rm -rf feeds/lienol/lienol/ipt2socks
+        rm -rf feeds/lienol/lienol/shadowsocksr-libev
+        rm -rf feeds/lienol/lienol/pdnsd-alt
+        rm -rf feeds/lienol/package/verysync
+        rm -rf feeds/lienol/lienol/luci-app-verysync
+        rm -rf package/lean/kcptun
+        rm -rf package/lean/trojan
+        rm -rf package/lean/v2ray
+        rm -rf package/lean/luci-app-kodexplorer
+        rm -rf package/lean/luci-app-pppoe-relay
+        rm -rf package/lean/luci-app-pptp-server
+        rm -rf package/lean/luci-app-v2ray-server
 
     - name: Install Feeds
       run: cd openwrt && ./scripts/feeds install -a
