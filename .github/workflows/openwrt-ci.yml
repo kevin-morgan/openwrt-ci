@@ -106,13 +106,13 @@ jobs:
     - name: Install Feeds
       run: cd openwrt && ./scripts/feeds install -a
 
-#    - name: Load Custom Configuration
-#      run: |
-#        [ -e files ] && mv files openwrt/files
+    - name: Load Custom Configuration
+      run: |
+        [ -e files ] && mv files openwrt/files
 #        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
-#        chmod +x $CUSTOM_SH
-#        cd openwrt
-#        ../$CUSTOM_SH
+        chmod +x $CUSTOM_SH
+        cd openwrt
+        ../$CUSTOM_SH
 
     - name: SSH connection to Actions
       uses: kevin-morgan/debugger-action@master
